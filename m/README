@@ -1,0 +1,28 @@
+M1 (millions of years late.  Total time required... 20+ hours of debugging goddamn collision response)
+
+REQUIREMENTS SCAVENGER HUNT
+
+Integration is done in Entity.java's update() method.  Can be verified because things move.
+
+Force and Impulse calculations are done in Entity.java's update() method.  Force and Impulse are added with addForce() and addImpulse()
+
+MTV calculations are scattered all over the place because FUCK collisions.  Depending on which two shapes are colliding, this could be done in the check<Shape>Collision() method of the Shape class itself, or in Collisions.axisCollide().  IntervalMTV is calculated in Utils.intervalMTV()
+
+Collision response is handled by Collisions.resolve()
+
+There is a Player class which can be moved.  Movement is handled by Player.moveLeft(), Player.moveRight(), and Player.jump().  Taking keyboard input is done by MWorld.onKeyPressed()
+
+Static bounding shapes are added in MWorld.init()
+
+---- M2 REQUIREMENTS ----
+M2 took much less time, probably like 4 hours total
+
+Restitution: All entities have a float field called "restitution" that contains their coefficient of restitution.  In the game world, Polygons have R = 0.5 (partially elastic), circles have R = 0.9 (elastic), boxes have R = 0 (perfectly inelastic)
+
+Collision response (including restitution calcs) happens in Collisions.resolve()
+
+Raycasting: Raycasting is done in World.castRay which creates a Ray object, and passes it to Collisions.checkRayCast() where it is cast against every entity's shape in the scene.
+
+Collision types: see restitution above
+
+Player things (bullets, grenades, jumping) are handled in Player's methods and interaction is collected by the onKeyPressed and onMouseClicked methods of MWorld.
