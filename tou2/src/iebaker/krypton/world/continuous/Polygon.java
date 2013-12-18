@@ -1,14 +1,9 @@
-package iebaker.xenon.geom;
+package iebaker.krypton.world.continuous;
 
 import cs195n.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import iebaker.xenon.util.Collision;
-import iebaker.xenon.util.Collisions;
-
-import iebaker.xenon.core.Artist;
-import java.awt.Graphics2D;
 public class Polygon implements Shape {
 
 	private java.util.List<Vec2f> my_points = new ArrayList<Vec2f>();
@@ -45,26 +40,76 @@ public class Polygon implements Shape {
 		return new Polygon(points);
 	}
 
-	public Collision checkCollision(Shape s) {
+	@Override
+	public boolean checkCollision(Shape s) {
 		return s.checkPolygonCollision(this);
 	}
 
-	public Collision checkCircleCollision(Circle c) {
-		Collision col = c.checkPolygonCollision(this);
-		if(col.collides()) return new Collision(true, col.mtv1(), this, c);
-		else return new Collision(false);
-	}
-
-	public Collision checkAABCollision(AAB a) {
+	@Override
+	public boolean checkCircleCollision(Circle c) {
 		java.util.Set<SeparatingAxis> axes = this.toAxisSet();
-		axes.addAll(AAB.standardAxes());
-		return Collisions.axisCollide(axes, this, a);
+
+		float min_dist = Float.MAX_VALUE;
+		Vec2f min_point = null;
+		for(Vec2f point : my_points) {
+			float temp_dist = point.dist(c.getCenter());
+			if(temp_dist < min_dist) {
+				min_dist = temp_dist;
+				min_point = point;
+			}
+		}
+
+		if(min_point != null) {
+			axes.add(new SeparatingAxis(min_point.minus(c.getCenter())));
+		}
+
+		for(SeparatingAxis axis : axes) {
+			Range r1 = axis.project(this);
+			Range r2 = axis.project(c);
+			if(!r1.overlaps(r2)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
-	public Collision checkPolygonCollision(Polygon p) {
+	@Override
+	public boolean checkAABCollision(AAB a) {
+		//System.out.println("----------Beginning AAB collision check!!");
+		java.util.Set<SeparatingAxis> axes = this.toAxisSet();
+
+		axes.add(new SeparatingAxis(new Vec2f(0,1)));
+		axes.add(new SeparatingAxis(new Vec2f(1,0)));
+
+		//System.out.println(axes.size());
+
+		for(SeparatingAxis axis : axes) {
+			//System.out.println("----- Collision check along axis " + axis);
+			Range r1 = axis.project(this);
+			Range r2 = axis.project(a);
+			if(!r1.overlaps(r2)) {
+				//System.out.println("-----Collision not found");
+				return false;
+			}
+		}
+
+		//System.out.println("-----Collision found");
+		return true;
+	}
+
+	@Override
+	public boolean checkPolygonCollision(Polygon p) {
 		java.util.Set<SeparatingAxis> axes = this.toAxisSet();
 		axes.addAll(p.toAxisSet());
-		return Collisions.axisCollide(axes, this, p);
+		for(SeparatingAxis axis : axes) {
+			Range r1 = axis.project(this);
+			Range r2 = axis.project(p);
+			if(!r1.overlaps(r2)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public java.util.Set<SeparatingAxis> toAxisSet() {
@@ -91,54 +136,7 @@ public class Polygon implements Shape {
 		return return_value;
 	}
 
-	public java.util.Set<LineSegment> toSegmentSet() {
-		java.util.Set<LineSegment> return_value = new HashSet<LineSegment>();
-		for(int i = 0; i < my_points.size() - 1; ++i) {
-			LineSegment temp = new LineSegment(my_points.get(i + 1), my_points.get(i));
-			return_value.add(temp);
-		}
-		return_value.add(new LineSegment(my_points.get(0), my_points.get(my_points.size() - 1)));
-		return return_value;
-	}
-
 	public java.util.List<Vec2f> getPoints() {
 		return my_points;
-	}
-
-	public Vec2f getCenter() {
-		float hAcc = 0f;
-		float vAcc = 0f;
-		float len = my_points.size();
-		for(Vec2f point : my_points) {
-			hAcc += point.x;
-			vAcc += point.y;
-		}
-		float hCenter = hAcc/(float)len;
-		float vCenter = vAcc/(float)len;
-
-		return new Vec2f(hCenter, vCenter);
-	}
-
-	public Shape at(Vec2f newCenter) {
-		Vec2f pointing = newCenter.minus(this.getCenter());
-		java.util.List<Vec2f> new_points = new ArrayList<Vec2f>();
-		for(Vec2f point : my_points) {
-			new_points.add(point.plus(pointing));
-		}
-		return new Polygon(new_points);
-	}
-
-	public void drawSelf(Artist a, Graphics2D g) {
-		a.path(g, my_points);
-	}
-
-	@Override
-	public String toString() {
-		return "[POLYGON with P=" + my_points + "]";
-	}
-
-
-	public String typeString() {
-		return "[POLYGON]";
 	}
 }
